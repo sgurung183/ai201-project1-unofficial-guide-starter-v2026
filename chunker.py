@@ -82,22 +82,53 @@ def fallback_split(
 
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """
-    Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
+    My chunker for campus_life.
 
-    Right now it just calls the fallback. That is the plain, generic behaviour
-    the brief is talking about.
+    I read through the corpus in Milestone 1 and noticed every post is short
+    (under 600 characters) and only ever about one thing — one dorm, one
+    course, one dining hall. The paragraphs inside a post ("the good", "the
+    bad", laundry, noise) are just different details about that one thing, so
+    splitting a post in the middle would leave a chunk like "Laundry costs
+    $2.00 wash..." with no way to tell which building it's even about.
 
-    When you write your own strategy, set `produced_by` to
-    "chunker.py::split_documents" so your README's Sample Chunks section names
-    the right function. `app.py chunks` prints that string for you.
-
-    Things worth thinking about before you write any code:
-      - Are your documents short posts or long guides?
-      - Is the useful information in one sentence, or spread over a paragraph?
-      - Would splitting on paragraph breaks keep more thoughts intact than
-        splitting on a character count?
+    So instead of cutting every CHUNK_SIZE characters like the fallback does,
+    I split on blank lines (paragraph breaks) and glue paragraphs back
+    together up to CHUNK_SIZE. I set CHUNK_SIZE in config.py a bit bigger than
+    the longest post in this corpus, so in practice a post never gets cut —
+    that's on purpose, not something I missed. If a document ever did grow
+    past that limit, this still breaks it between paragraphs instead of
+    mid-sentence.
     """
-    return fallback_split(documents)
+    chunk_size = config.CHUNK_SIZE
+    chunks: list[Chunk] = []
+
+    for doc in documents:
+        paragraphs = [p.strip() for p in doc.text.split("\n\n") if p.strip()]
+
+        pieces = []
+        current = ""
+        for paragraph in paragraphs:
+            if current and len(current) + 2 + len(paragraph) > chunk_size:
+                pieces.append(current)
+                current = paragraph
+            elif current:
+                current = current + "\n\n" + paragraph
+            else:
+                current = paragraph
+        if current:
+            pieces.append(current)
+
+        for index, piece in enumerate(pieces):
+            chunks.append(
+                Chunk(
+                    text=piece,
+                    source=doc.source,
+                    index=index,
+                    produced_by="chunker.py::split_documents",
+                )
+            )
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:

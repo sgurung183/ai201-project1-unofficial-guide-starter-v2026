@@ -29,54 +29,72 @@
 
 ## Chunking Strategy
 
-**Chunk size:**
-**Overlap:**
+**Chunk size:** 700 characters
+**Overlap:** n/a (see below — my chunker doesn't cut mid-post, so there's nothing to overlap)
 
-<!-- What about YOUR documents made you pick these numbers? Short posts and
-     long sectioned guides don't want the same chunking, and "800 seemed
-     reasonable" earns nothing. Point at something you noticed when you read
-     the documents in Milestone 1.
+<!-- What about YOUR documents made you pick these numbers? -->
 
-     If you changed your mind partway through, say so and say why. That's worth
-     more than pretending you got it right first time.
+When I ran `python app.py index` with the starter chunker, it printed 88 documents in and 88 chunks out — the 800-character window never actually cut anything, because when I read the corpus in Milestone 1 I saw every post in `campus_life` is short (179–563 characters). Each post is also about exactly one thing: one dorm, one course, one dining hall. The paragraphs inside a post ("the good", "the bad", laundry costs, noise) are different details about that same thing, not different topics.
 
-     Milestone 3. -->
+That told me the right move wasn't to pick a smaller chunk size and start cutting posts up — a chunk like "Laundry costs $2.00 wash, $1.75 dry, app-based" on its own doesn't say which building it's about, so splitting mid-post would actually make chunks worse, not more focused. Instead I wrote my own chunker (`chunker.py::split_documents`) that splits on paragraph breaks and glues paragraphs back together up to `CHUNK_SIZE`, only cutting between paragraphs, never mid-sentence. I set `CHUNK_SIZE` to 700 — a bit above the longest post in the corpus (563 characters) — so in practice every post still comes out as one whole chunk, but now that's a decision I made on purpose after reading the documents, not an accident of a generic 800-character default.
 
 ## Sample Chunks
 
-<!-- Five chunks, pasted as text. Label each one and name the file it came from
-     AND the function that produced it — the grader checks your code against
-     what you claim here.
-
-     `python app.py chunks -n 5` prints all three for you. Copy them straight
-     across.
-
-     Milestone 3. -->
-
-**Chunk 1** — source: `` — produced by: ``
+**Chunk 1** — source: `admin_add_drop_deadline.txt#0` — produced by: `chunker.py::split_documents`
 
 ```
+On the add/drop deadline
+
+You can add a course through the end of the second week. Dropping is a longer window — through the end of week six — but a drop after week two shows as a W on your transcript. Nothing anywhere on the registrar's site says this plainly, and students find out from each other.
 ```
 
-**Chunk 2** — source: `` — produced by: ``
+**Chunk 2** — source: `course_biol_160.txt#0` — produced by: `chunker.py::split_documents`
 
 ```
+BIOL 160 Cell Biology
+
+I lived here my sophomore year. Format is lecture three times a week with a weekly lab. Assessment: four unit tests and a cumulative final. Not curved.
+
+Expect 9 to 11 hours a week, the heaviest first-year course by reputation.
+
+The one piece of advice: the unit tests come fast, roughly every three weeks; falling behind once is very hard to recover from.
 ```
 
-**Chunk 3** — source: `` — produced by: ``
+**Chunk 3** — source: `course_hist_118_workload.txt#0` — produced by: `chunker.py::split_documents`
 
 ```
+Workload for HIST 118 Modern World History
+
+People keep asking so: a lot of reading, about 120 pages a week, but no problem sets. That's real time, not optimistic time.
+
+It's front-loaded — the first month is heavier than the rest, partly because you're learning the format.
 ```
 
-**Chunk 4** — source: `` — produced by: ``
+**Chunk 4** — source: `dining_pellew_dining_hall_followup.txt#0` — produced by: `chunker.py::split_documents`
 
 ```
+Re: Pellew Dining Hall
+
+Adding to what people have said about Pellew Dining Hall. The wait figure of 12 to 18 minutes at peak matches what I've seen. If you're trying to eat between classes, go before 11:45 and it's a different building entirely.
+
+Also worth saying: the furthest hall from anywhere, next to the athletics centre. Nobody tells you this at orientation.
 ```
 
-**Chunk 5** — source: `` — produced by: ``
+**Chunk 5** — source: `housing_innisfree_hall.txt#0` — produced by: `chunker.py::split_documents`
 
 ```
+Innisfree Hall — what it's actually like
+
+Transferred in last year, so take this with a grain of salt. Built 1991, renovated 2022. Rooms are doubles arranged as pairs sharing one bathroom between two rooms.
+
+The good: the shared-bathroom-between-two-rooms arrangement is the best compromise on campus.
+
+The bad: no air conditioning, which matters for the first three weeks of September.
+
+Laundry costs $1.75 wash, $1.75 dry, app-based. On noise: moderate; the building is L-shaped and the short wing is much quieter.
 ```
+
+Reading these back: each one stands on its own — you could answer "when's the add/drop deadline" or "what's Innisfree Hall like" from the chunk alone, without needing the chunk before or after it. That's the payoff of keeping a post whole instead of cutting it at a fixed character count.
 
 ## Sample Answer
 
