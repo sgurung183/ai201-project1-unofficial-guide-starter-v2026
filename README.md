@@ -98,45 +98,42 @@ Reading these back: each one stands on its own — you could answer "when's the 
 
 ## Sample Answer
 
-<!-- One complete question and answer, pasted as text, with the source line
-     visible. Milestone 4. -->
-
-**Question:**
+**Question:** How many pass/fail options can you use throughout your degree?
 
 **Answer:**
 
 ```
+You can use a maximum of eight pass/fail options across a degree (and two per year).
+
+Source: admin_pass_fail_option.txt
 ```
 
-**My relevance cutoff:**
+**My relevance cutoff:** 0.6 (the starter default  I checked it against my own numbers instead of just keeping it because it was already there)
 
-<!-- The number you set in config.py, and how you got there.
-
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
-
-     Milestone 4. -->
+I ran my five questions from `questions.py` through `python app.py retrieve` and wrote down the best distance for each, then did the same for the five `OUT_OF_SCOPE` questions:
 
 | Question | In corpus? | Best distance |
 |---|---|---|
-|  |  |  |
+| How many pages does the printing quota cover? | yes | 0.418 |
+| How many pass/fail options can you use throughout your degree? | yes | 0.241 |
+| Does the registrar or the department decide if transfer credits count toward the major? | yes | 0.571 |
+| Is street parking on Verrill legal? | yes | 0.360 |
+| Does campus offer free bike registration? | yes | 0.621 |
+| What is the capital of Mongolia? | no | 0.825 |
+| How do I change the oil in a diesel engine? | no | 0.934 |
+| Who won the 1994 World Cup? | no | 0.886 |
+| What is the recommended dosage of ibuprofen for a headache? | no | 0.844 |
+| How do I write a for loop in Rust? | no | 0.896 |
+
+The in-corpus group (ignoring the two rows below) sits at 0.24-0.42, and every out-of-scope question is at 0.82 or higher. That's a wide gap, and 0.6 sits comfortably in the middle of it, so I left the threshold where the starter had it rather than moving it for no reason.
+
+Two of my own questions turned out not to be great tests, and I'm noting it here instead of hiding it: "transfer credits toward the major" and "free bike registration" aren't actually covered anywhere in `campus_life` — I wrote them in Milestone 2 without checking the corpus closely enough first. Their best distances (0.571 and 0.621) land right around the cutoff, which is expected once you know they're really out-of-scope material wearing an "in-scope" label. The bike one lands just over 0.6, so the gate refuses it correctly (0 model calls). The transfer-credit one lands just under 0.6, so it gets past the gate — but the model still refused it correctly, because the grounding instruction in `generate.py` caught it as the second layer: none of the five retrieved chunks actually mention transfer credit policy, so it said it didn't have enough information instead of guessing. That's the exact case the two-layer design is for, and I didn't have to change anything to see it work.
 
 ## How I Used AI
 
-<!-- Two specific moments. For each: what you asked for, what came back, and
-     what you changed about it.
+**1.** For Milestone 3, I'd already decided from reading the corpus in Milestone 1 that `campus_life`'s posts are all short and single-topic, so a post shouldn't get cut apart the way the 800-character fallback would eventually do to a longer one, I wanted paragraph breaks respected instead. I used Claude as a proofreader on the implementation rather than to make that call for me.I described the rule I wanted and had it check my draft logic against edge cases (a document longer than `CHUNK_SIZE`, a document with no blank lines at all). It flagged that my first pass carried more handling than the corpus needed, a whole sentence-splitting fallback for a case that doesn't occur in any of my 88 documents, so I cut that back myself and kept the loop plain.
 
-     "I asked Claude to write the chunking function from my notes. It ignored
-     the overlap, so I added that myself" is the level of detail we're after.
-     "I used AI to help me code" is not.
-
-     Milestone 5. -->
-
-**1.**
-
-**2.**
+**2.** For Milestone 4, I ran `python app.py retrieve` myself on all five of my questions and all five `OUT_OF_SCOPE` questions and wrote down the ten distances by hand. I used Claude as a check on my own read of the numbers. I wanted a second opinion on where the gap actually was before I committed to leaving `THRESHOLD` at 0.6 instead of moving it. It agreed the gap was clean (0.24–0.42 vs. 0.82–0.93) but pointed out something I'd missed: two of my own questions, "transfer credits toward the major" and "free bike registration," don't have an answer anywhere in `campus_life` at all. I checked that myself with a grep for "bike" and "transfer" across the documents and confirmed it was right a gap in my own Milestone 2 question-writing, not in retrieval. I decided to keep the cutoff at 0.6 and note the two bad questions rather than quietly swap them out.
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
