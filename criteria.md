@@ -57,41 +57,24 @@ in at least 4 of 5 tries.
 
 ## 4. Something about your chunks
 
-<!-- YOU WRITE THIS ONE.
+Chunks are complete thoughts.
+<!-- At least 4 of 5 sampled chunks read as a complete thought, beginning and ending at a natural boundary (a reply marker, a thread title, or a full sentence) rather than being cut off mid-sentence or mid-word. -->
 
-     How would you know if your chunks were the right size? Name something
-     countable or observable.
+**Why this target:**
+<!--These are informal forum replies so some end on an odd note or skip punctuation even when the chunker did nothing wrong.-->
 
-     Examples of the right shape — don't copy these, they should come from
-     what you actually saw in Milestone 3:
-       - "At least 4 of 5 sampled chunks read as a complete thought, with no
-          sentence cut in half at either end."
-       - "No chunk is shorter than 200 characters, since anything below that
-          in my corpus turned out to be a heading with no content under it." -->
+## 5. something about mixing up similar numbers
 
+Doesn't mix up similar numbers.
 
+<!--When asked about the pass/fail limit, the answer contains "eight" (the
+degree-wide total) and not "two" (the annual limit)-->
 
 **Why this target:**
 
-
-
----
-
-## 5. Your choice
-
-<!-- YOU WRITE THIS ONE TOO.
-
-     Pick something you actually care about getting right. It could be about
-     speed, about refusals, about a particular kind of question your corpus
-     handles badly, about source attribution being correct rather than merely
-     present — anything, as long as it names a number or an observable
-     outcome. -->
-
-
-
-**Why this target:**
-
-
+<!--The pass/fail thread states two numbers close together in the same reply
+(2 per year, 8 total across the degree). A system that's sloppy about
+grounding could easily grab the wrong one and still sound confident.-->
 
 ---
 
