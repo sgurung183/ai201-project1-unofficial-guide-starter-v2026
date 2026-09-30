@@ -34,7 +34,7 @@
 
 <!-- What about YOUR documents made you pick these numbers? -->
 
-When I ran `python app.py index` with the starter chunker, it printed 88 documents in and 88 chunks out — the 800-character window never actually cut anything, because when I read the corpus in Milestone 1 I saw every post in `campus_life` is short (179–563 characters). Each post is also about exactly one thing: one dorm, one course, one dining hall. The paragraphs inside a post ("the good", "the bad", laundry costs, noise) are different details about that same thing, not different topics.
+When I ran `python app.py index` with the starter chunker, it printed 88 documents in and 88 chunks out the 800-character window never actually cut anything, because when I read the corpus in Milestone 1 I saw every post in `campus_life` is short (179–563 characters). Each post is also about exactly one thing: one dorm, one course, one dining hall. The paragraphs inside a post ("the good", "the bad", laundry costs, noise) are different details about that same thing, not different topics.
 
 That told me the right move wasn't to pick a smaller chunk size and start cutting posts up — a chunk like "Laundry costs $2.00 wash, $1.75 dry, app-based" on its own doesn't say which building it's about, so splitting mid-post would actually make chunks worse, not more focused. Instead I wrote my own chunker (`chunker.py::split_documents`) that splits on paragraph breaks and glues paragraphs back together up to `CHUNK_SIZE`, only cutting between paragraphs, never mid-sentence. I set `CHUNK_SIZE` to 700 — a bit above the longest post in the corpus (563 characters) — so in practice every post still comes out as one whole chunk, but now that's a decision I made on purpose after reading the documents, not an accident of a generic 800-character default.
 
@@ -227,48 +227,52 @@ Every run leads with "eight" as the degree-wide total and keeps "two" scoped to 
 
 ## Verdicts
 
-<!-- MET or MISSED for each of the five, against the target you wrote last
-     unit — not a new one. Plus a sentence on how you decided. That sentence
-     matters most where it was close.
+CRITERION 1: For at least 4 of my 5 test questions, the retrieved chunks include one thatcontains the answer. 
+VERDICT : MISS
+REASON: My target was "4 of 5". But acreoss all three runs I actually got 3 out of 5, and it was the same two questions failing every single time. Since those 2 questions ask about tings that literally do not exist in the corpus there is nothing to retruve so the system is not behaving inconsistently, the questions are just unanswerable so i say this is a clean miss
 
-     If your target said 4 of 5 and your runs came out 4, 3, 4, that's a MISS.
-     The target has to hold, not show up occasionally.
+CRITERION 2: Every answer the system produces names at least one source document. 
+VERDICT: MISS
+REASON: This is kind of a side effect of #1, there iis no chunk with the asnwer so the model correctly says i dont have enough information instead of naming a source.o the 2 failures here are the exact same 2 questions as above, for the exact same reason. I'm pointing that out so it's clear this isn't a second, unrelated bug. it's one root cause showing up on two criteria.
 
-     Milestone 2. -->
+CRITERION 3: When I ask a question my documents clearly don't cover, the relevance gate stops it and the system returns "I don't have enough information about that" —
+in at least 4 of 5 tries. 
+VERDICT: MET
+REASON: Target was 4/5, I got 5/5, and the numbers aren't even close together. The worst-case out-of-scope distance (0.825) is way above my 0.6 cutoff, and even the worst in-corpus distance (0.621, the bike question) barely goes over it. So this isn't a "just barely passed" situation; there's a wide safety margin.
 
-| # | Criterion | Verdict | How I decided |
-|---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+CRITERION 4: Chunks are complete thoughts.  
+VERDICT: MET-->
+REASON:I looked at the 5 sample chunks and confirmed none get cut off mid-sentence. At least 4 of 5 sampled chunks read as a complete thought, beginning and ending at a natural boundary (a reply marker, a thread title, or a full sentence) rather than being cut off mid-sentence or mid-word. 
+
+CRITERION 5: Doesn't mix up similar numbers.
+VERDICT: MET
+REASON: I read the generated text of all 3 runs and confirmed "eight" was always the degree-total number and "two" was always scoped correctly to "per year," even though the exact sentence wording changed slightly between runs.
+
 
 ## Diagnoses
 
-<!-- For each miss: which stage caused it, and how. The stage alone isn't
-     enough — you need the mechanism.
+Here's the Diagnoses text — tell me if you want any part adjusted, then you can paste it in yourself:
 
-     Not a diagnosis: "Question 3 didn't work."
-     A diagnosis:     "Question 3 asks about laundry costs. The answer is in
-                       one sentence that got split across two chunks, so
-                       neither chunk on its own contains it."
+---
 
-     The five stages: loading → chunking → embedding → retrieval → generation.
+## Criteria 1 & 2 (retrieved chunk contains the answer / every answer names a source)
 
-     Look for a pattern. If three misses all ask about numbers, that's one
-     problem, not three.
+Both misses have the same root cause and it isn't a bug in any of the five pipeline stages. It's a **loading**-stage gap: two of my five test questions ("transfer credits toward the major," "free bike registration") ask about topics that never made it into the corpus in the first place. I confirmed this with a plain grep for "bike" and "transfer" across all 88 documents in `campus_life` and got zero hits for either topic.
 
-     Missed nothing? Say so, then say honestly whether your targets were set
-     low, and which one you'd tighten and to what.
+Given that, retrieval is doing exactly what it should: for the transfer-credits question it returns the five closest chunks it has (0.571 distance, closer than any true out-of-scope question, but still not a real match), and for the bike question it returns chunks close enough to pass the gate at first glance but ultimately unrelated (0.621). Chunking and embedding aren't implicated either, the chunks retrieved are well-formed and correctly embedded, they just don't answer the question because no chunk anywhere does. And generation behaves correctly too: for both questions it refuses rather than fabricating an answer, because the grounding instruction in `generate.py` checks whether the retrieved chunks actually contain the claim before answering.
 
-     Milestone 3. -->
+So this is one problem, not two: a question-writing gap from Milestone 2, where I wrote test questions without first checking they were answerable from the corpus. Nothing downstream of that (chunking, embedding, retrieval, generation) needs fixing. they're all behaving as designed on data that was never there to find.
+
+## Criteria 3, 4, 5:
+ no misses, nothing to diagnose. If I were tightening a target, criterion 3 (gate stops out-of-corpus questions) has the most slack, 5/5 against a target of 4/5, with a wide margin between in and out-of-scope distances so that's the one I'd raise, to "5 of 5" instead of "4 of 5," if I were rewriting targets.
 
 ## The Improvement
 
-**What I changed:**
+**What I changed:** 
+Lowered the relevance gate cutoff in config.py from 0.6 to 0.55.
 
 **Why I picked it:**
+My diagnosis found that criteria 1 and 2 both fail because two of my test questions ask about topics that aren't anywhere in the corpus, not because of a chunking, retrieval, or gate problem. The transfer-credits question sat right at 0.571, close enough to the old 0.6 cutoff that it seemed worth testing whether moving the threshold changed anything. It's a small, single-number change that directly tests the borderline case my diagnosis flagged, without touching multiple parts of the pipeline at once.
 
 <!-- Connect it to a specific diagnosis above in one sentence. If you can't,
      you picked a fix because it sounded impressive. -->
@@ -280,34 +284,20 @@ Every run leads with "eight" as the degree-wide total and keeps "two" scoped to 
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 3 of 5 | 3 of 5  | 3 of 5  | MISS |
+| 2. Every answer names a source | 5 of 5 | 3 of 5 | 3 of 5 | 3 of 5 | MISS  |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5 of 5 | 5 of 5  | 5 of 5  | MET |
+| 4. Chunks are complete thoughts| 4 of 5| 5 of 5| 5 of 5| 5 of 5 |MET |
+| 5.Doesn't mix up similar pass/fail numbers |correct on all try | | | | MET |
 
 **Did it help?**
 
-<!-- Say plainly whether it did, and how you know. If it made things worse,
-     say that — a change that backfired, honestly reported, earns full credit
-     and is more interesting than one that worked. What matters is that you can
-     tell.
-
-     Milestone 4. -->
+No, it didn't really change anything. I lowered the cutoff from 0.6 to 0.55 hoping it might catch the transfer-credits question in a different way, since it sat right at 0.571. It did shift where that question gets refused (the gate itself now, instead of the model), but the final answer is the same either way. All five criteria came out exactly the same as before: 3/5, 3/5, 5/5, 5/5, correct every time. Makes sense in hindsight, the answers just aren't in my corpus, so no cutoff was ever going to fix that.
 
 ## What's Still Broken
 
-<!-- For each criterion still missed after your fix: what you'd do about it,
-     and why you stopped where you did.
-
-     "I ran out of time" is fine if it's true. Pretending nothing is left is
-     not.
-
-     Milestone 5. -->
+Criteria 1 and 2 are still broken, 3/5 instead of the 4/5 and 5/5 I wanted. Both come down to the same two questions (transfer credits, bike registration) asking about stuff that just isn't in the corpus. That's not something a threshold tweak, chunking change, or prompt fix can touch, the content has to exist first. To actually fix it I'd need to add real source documents on those two topics and reindex, which I didn't do here since it felt outside what this milestone was asking for. If I kept going I'd add those two docs, or swap the two bad questions for ones the corpus actually covers, and rerun to see if I hit 4/5 and 5/5.
 
 ## What I'd Do Differently
 
-<!-- Knowing what you know now — which of your five criteria would you write
-     differently, and why?
-
-     Milestone 5. -->
+I'd write my Milestone 2 questions by grepping the corpus first, not after. Two of my five questions turned out to ask about things that don't exist anywhere in campus_life, and I only caught that in Unit 1 while double checking the relevance gate, not when I wrote them. If I'd checked upfront, my whole Unit 2 run would've had five real, answerable questions instead of two dead ones dragging down criteria 1 and 2 the whole time. I'd also probably write criterion 1 and 2 as one combined criterion next time, since in this system they always fail together for the same reason and tracking them separately didn't tell me anything extra.
