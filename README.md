@@ -199,7 +199,7 @@ Does campus offer free bike registration?
   -> no chunk contains the answer (not covered anywhere in campus_life), no source named
 ```
 
-3 of 5 questions have a retrieved chunk that contains the answer, and 3 of 5 answers name a source — the same two questions fail both criteria, because they're the two I flagged in Unit 1's Sample Answer section as not actually being covered by `campus_life`. That's a corpus/question-writing problem, not a retrieval or generation bug: retrieval and the gate are both behaving correctly on those two, there's just nothing to find.
+3 of 5 questions have a retrieved chunk that contains the answer, and 3 of 5 answers name a source, the same two questions fail both criteria, because they're the two I flagged in Unit 1's Sample Answer section as not actually being covered by `campus_life`. That's a corpus/question-writing problem, not a retrieval or generation bug: retrieval and the gate are both behaving correctly on those two, there's just nothing to find.
 
 **Criterion 3** — real output, `run_eval.py::check_out_of_scope`, cutoff 0.6:
 
