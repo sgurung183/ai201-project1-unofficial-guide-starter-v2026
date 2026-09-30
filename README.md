@@ -162,15 +162,68 @@ Two of my own questions turned out not to be great tests, and I'm noting it here
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 3 of 5 | 3 of 5 | 3 of 5 | MISS |
+| 2. Every answer names a source | 5 of 5 | 3 of 5 | 3 of 5 | 3 of 5 | MISS |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
+| 4. Chunks are complete thoughts | 4 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | MET |
+| 5. Doesn't mix up similar pass/fail numbers | correct on every try | correct | correct | correct | MET |
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+Full run data: `results/run_2026-09-23_1630_before.md`, produced by `run_eval.py::main` (retrieval via `store.py::search`, generation via `generate.py`).
+
+**Criteria 1 & 2** — real output, `run_eval.py::main`:
+
+```
+How many pages does the printing quota cover?
+  best distance 0.4182 (passed the gate)
+  "The printing quota covers roughly 600 black-and-white pages per semester (admin_printing_quota.txt)."
+  -> chunk contains the answer, names a source
+
+How many pass/fail options can you use throughout your degree?
+  best distance 0.2408 (passed the gate)
+  "You can use a maximum of eight pass/fail options across a degree (and two per year). Source: admin_pass_fail_option.txt"
+  -> chunk contains the answer, names a source
+
+Does the registrar or the department decide if transfer credits count toward the major?
+  best distance 0.5711 (passed the gate)
+  "I do not have enough information to answer this question."
+  -> no chunk contains the answer (not covered anywhere in campus_life), no source named
+
+Is street parking on Verrill legal?
+  best distance 0.3605 (passed the gate)
+  "Yes, parking on Verrill Street is legal. Source: admin_parking_permits.txt"
+  -> chunk contains the answer, names a source
+
+Does campus offer free bike registration?
+  best distance 0.6205 (refused by the gate)
+  "I don't have enough information about that."
+  -> no chunk contains the answer (not covered anywhere in campus_life), no source named
+```
+
+3 of 5 questions have a retrieved chunk that contains the answer, and 3 of 5 answers name a source — the same two questions fail both criteria, because they're the two I flagged in Unit 1's Sample Answer section as not actually being covered by `campus_life`. That's a corpus/question-writing problem, not a retrieval or generation bug: retrieval and the gate are both behaving correctly on those two, there's just nothing to find.
+
+**Criterion 3** — real output, `run_eval.py::check_out_of_scope`, cutoff 0.6:
+
+```
+Out-of-scope questions (the gate should refuse these):
+  refused  (best distance 0.825)  What is the capital of Mongolia?
+  refused  (best distance 0.934)  How do I change the oil in a diesel engine?
+  refused  (best distance 0.886)  Who won the 1994 World Cup?
+  refused  (best distance 0.844)  What is the recommended dosage of ibuprofen for a headache?
+  refused  (best distance 0.896)  How do I write a for loop in Rust?
+  -> gate refused 5 of 5
+```
+
+**Criterion 4** — real output, `chunker.py::split_documents` (see Unit 1's Sample Chunks for the full text): all 5 sampled chunks begin and end at a post boundary — a title line through a full final sentence — none are cut mid-sentence or mid-word.
+
+**Criterion 5** — real output, `generate.py`, all 3 runs of the pass/fail question:
+
+```
+run 1: "You can use a maximum of eight pass/fail options across a degree (and two per year)."
+run 2: "You can use a maximum of eight pass/fail options across a degree (with a maximum of two per year)."
+run 3: "You can use a maximum of eight pass/fail options across a degree (with a maximum of two per year)."
+```
+
+Every run leads with "eight" as the degree-wide total and keeps "two" scoped to "per year" — it never swaps them.
 
 ## Verdicts
 
